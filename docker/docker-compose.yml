@@ -1,0 +1,93 @@
+version: '3.7'
+
+services:
+  nginx:
+    container_name: ssr-nginx
+    build:
+      context: ../
+      target: nginx
+      dockerfile: docker/Dockerfile
+    restart: always
+    env_file: .env
+    tmpfs: /cache/:size=3G
+    volumes:
+      - ./nginx.conf:/usr/local/openresty/nginx/conf/nginx.conf
+      - ../front-app/:/app/
+    depends_on:
+      - python-api-app
+      - python-cache-app
+    ports:
+      - 80:80
+    networks:
+      - ssr
+    logging: &logging
+      driver: "json-file"
+      options:
+        max-size: "1m"
+        max-file: "1"
+
+  python-api-app:
+    container_name: ssr-python-api-app
+    build:
+      context: ../
+      target: python-api-app
+      dockerfile: docker/Dockerfile
+    restart: always
+    env_file: .env
+    volumes:
+      - ../python-api-app/src/api_app:/app/src/api_app
+      - ../python-cache-app/src/cache_app:/cache-app/src/cache_app
+      - ../docker:/docker
+    depends_on:
+      - redis
+    networks:
+      - ssr
+    logging: *logging
+
+  python-cache-app:
+    container_name: ssr-python-cache-app
+    build:
+      context: ../
+      target: python-cache-app
+      dockerfile: docker/Dockerfile
+    restart: always
+    env_file: .env
+    volumes:
+      - ../python-cache-app/src/cache_app:/app/src/cache_app
+      - ../docker:/docker
+    depends_on:
+      - redis
+      - prerenderer
+    networks:
+      - ssr
+    logging: *logging
+
+  prerenderer:
+    container_name: ssr-prerenderer
+    build:
+      context: ../
+      target: prerenderer
+      dockerfile: docker/Dockerfile
+    restart: always
+    env_file: .env
+    volumes:
+      - ../js-prerenderer/prerender-server.js:/app/prerender-server.js
+      - ../js-prerenderer/lib/plugins/forwardHeaders.js:/app/lib/plugins/forwardHeaders.js
+    networks:
+      - ssr
+    logging: *logging
+
+  redis:
+    container_name: ssr-redis
+    image: redis:6.0.8-alpine
+    restart: always
+    networks:
+      - ssr
+    logging: *logging
+
+networks:
+  ssr:
+    ipam:
+      driver: default
+      config:
+        - subnet: 192.168.1.0/24

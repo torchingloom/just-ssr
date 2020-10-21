@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hello world</title>
+    <script src="static/jquery.min.js"></script>
+    <script>
+        $(function () {
+            for (var _ = 1; _ < 4; _++) {
+                doit(_);
+            }
+        });
+
+        function doit(_) {
+            if ($('#z' + _).length) {
+                return;
+            }
+            $('body').html($('body').html() + '<div id="z' + _ + '"></div><br><br><br>');
+            var u = '/api/handler' + _;
+            $.getJSON(u, function (d, st, r) {
+                $('#z' + _).html(
+                    '<h1 style="color: green"><b>' + u + '</b></h1>' + '\n\n<pre style="background: white">' + JSON.stringify(d, null, 4) + '</pre>'
+                );
+            });
+        }
+    </script>
+    <style>
+        * {
+            padding: 10px;
+            font-family: Consolas;
+        }
+
+        body {
+            padding: 20px;
+            background: silver;
+            font-size: 14px
+        }
+    </style>
+</head>
+<body>
+</body>
+</html>
