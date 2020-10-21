@@ -38,9 +38,6 @@ class Cache(CacheBase):
         await self.redis.delete(*tags_names)
         return CacheTagCollection()
 
-    async def set_url_tags_versions(self, url: str, tags_collection: CacheTagCollection) -> None:
-        await self.redis.set(self.get_cache_key_by_url(url), pickle.dumps(tags_collection))
-
     async def add_key_to_prerender_key(self, prerender_cache_key: str, *keys) -> None:
         await self.redis.sadd(prerender_cache_key, *keys)
 
@@ -50,8 +47,11 @@ class Cache(CacheBase):
     async def delete_prerender_key_keys(self, prerender_cache_key: str) -> None:
         await self.redis.delete(prerender_cache_key)
 
-    async def get_url_tags_versions(self, url: str) -> CacheTagCollection:
-        redis_data = await self.redis.get(self.get_cache_key_by_url(url))
+    async def set_key_tags_versions(self, key: str, tags_collection: CacheTagCollection) -> None:
+        await self.redis.set(key, pickle.dumps(tags_collection))
+
+    async def get_key_tags_versions(self, key: str) -> CacheTagCollection:
+        redis_data = await self.redis.get(key)
         if not redis_data:
             return CacheTagCollection()
         return pickle.loads(redis_data)

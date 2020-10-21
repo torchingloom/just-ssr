@@ -48,16 +48,21 @@ class RequestCacheHelper:
             self.cache_key = request.headers.get('x-cache-key')
         if self.is_prerender_cache_key_sec_valid:
             self.is_cache_prerender_enabled = True
+        if self.is_cache_prerender_enabled and not self.is_cache_location:
+            self.cache_key += '-' + self.prerender_cache_key
 
     async def is_cache_tags_versions_valid(self) -> bool:
         cached_tags = await self.cache_tags_get()
         return await self._cache.check_tags_versions(cached_tags)
 
     async def cache_tags_get(self) -> CacheTagCollection:
-        return await self._cache.get_url_tags_versions(self.cache_key)
+        return await self._cache.get_key_tags_versions(self.cache_key)
 
     async def cache_tags_set(self, tags_collection: CacheTagCollection) -> None:
-        await self._cache.set_url_tags_versions(self.cache_key, tags_collection)
+        await self._cache.set_key_tags_versions(self.cache_key, tags_collection)
+        await self.apply_for_prerender()
+
+    async def apply_for_prerender(self):
         if self.is_cache_prerender_enabled:
             await self._cache.add_key_to_prerender_key(self.prerender_cache_key, self.cache_key)
 

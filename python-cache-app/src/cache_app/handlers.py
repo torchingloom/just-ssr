@@ -27,7 +27,7 @@ async def handler(request: fastapi.Request) -> fastapi.Response:
     prerender_cache_key = cache.get_prerender_cache_key_by_url(str(request.url))
     internal_urls_tags_versions = CacheTagCollection()
     for internal_url_key in await cache.get_prerender_key_keys(prerender_cache_key):
-        internal_urls_tags_versions += await cache.get_url_tags_versions(internal_url_key)
+        internal_urls_tags_versions += await cache.get_key_tags_versions(internal_url_key)
     is_prerender_cache_valid = await cache.check_tags_versions(internal_urls_tags_versions)
     headers = {
         'x-accel-redirect': prerender_url,
