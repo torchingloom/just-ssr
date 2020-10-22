@@ -25,7 +25,7 @@ class Cache(CacheBase):
     async def check_tags_versions(self, tag_collection: CacheTagCollection) -> bool:
         if not tag_collection:
             return False
-        return tag_collection == await self.get_tags_versions_by_names(tag_collection.names)
+        return bool(tag_collection == await self.get_tags_versions_by_names(tag_collection.names))
 
     async def renew_tags_versions(self, tags_names: typing.List[str]) -> CacheTagCollection:
         now = str(time.time()).encode()
@@ -48,7 +48,13 @@ class Cache(CacheBase):
         await self.redis.sadd(prerender_cache_key, value)
 
     async def get_prerender_key_keys_hashes(self, prerender_cache_key: str) -> typing.Dict[str, str]:
-        return dict(list(map(lambda x: x.decode().split('='), await self.redis.smembers(prerender_cache_key))))
+        return {
+            row[0]: row[1]
+            for row in [
+                row.decode().split('=')
+                for row in await self.redis.smembers(prerender_cache_key)
+            ]
+        }
 
     async def check_prerender_key_keys_hashes(self, prerender_cache_key: str) -> bool:
         all_tags = CacheTagCollection()
@@ -86,8 +92,8 @@ def setup(app: FastAPI, redis_url: str) -> None:
     @app.on_event('startup')
     async def on_startup() -> None:
         redis = await aioredis.create_redis(redis_url)
-        app.cache = Cache(redis)
+        setattr(app, 'cache', Cache(redis))
 
     @app.on_event('shutdown')
     async def on_shutdown() -> None:
-        app.cache.redis.close()
+        getattr(app, 'cache').redis.close()

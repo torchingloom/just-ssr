@@ -17,13 +17,18 @@ def cli() -> None:
 @cli.command()
 @click.option('--debug', is_flag=True)
 def serve(debug: bool) -> None:
+    reload_dirs = site.getsitepackages()
+    reload_dirs.append('/cache-app')
+    workdir = os.getenv('WORKDIR')
+    if workdir:
+        reload_dirs.append(workdir)
     uvicorn_kwargs = {
         'loop': 'uvloop',
         'host': '0.0.0.0',
         'port': config('PYTHON_API_APP_PORT', cast=int, default=8000),
         'log_level': 'debug' if debug else 'warning',
         'proxy_headers': True,
-        'reload_dirs': site.getsitepackages() + ['/cache-app', os.getenv('WORKDIR')],
+        'reload_dirs': reload_dirs,
     }
     if debug:
         uvicorn_kwargs.update({

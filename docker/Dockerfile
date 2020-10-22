@@ -64,8 +64,10 @@ RUN \
     cd $CACHE_APP \
     && pipenv install --system --clear
 ADD python-api-app $WORKDIR
+RUN mypy $WORKDIR
 RUN pip install -e .
 ADD python-cache-app $CACHE_APP
+RUN mypy $CACHE_APP
 RUN \
     cd $CACHE_APP \
     && pip install -e .
@@ -82,5 +84,6 @@ ADD python-cache-app/Pipfile* ./
 RUN pipenv install --system --clear
 ADD docker /docker
 ADD python-cache-app $WORKDIR
+RUN mypy $WORKDIR
 RUN pip install -e .
 CMD python-cache-app serve --debug

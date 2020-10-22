@@ -10,6 +10,7 @@ click = "*"
 ujson = "*"
 uvloop = "*"
 uvicorn = "*"
+mypy = "*"
 fastapi = "*"
 fastapi-plugins = "*"
 

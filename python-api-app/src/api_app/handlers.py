@@ -30,5 +30,5 @@ async def handler(handler_number: int, request: Request):
         'cache-tags': tags_versions.as_sorted_dict(),
     }
     response = UJSONResponse(content=content)
-    response.cache_tags = tags_versions
+    setattr(response, 'cache_tags', tags_versions)
     return response

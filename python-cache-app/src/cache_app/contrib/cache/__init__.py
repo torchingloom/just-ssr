@@ -5,6 +5,10 @@ from dataclasses import dataclass
 from collections import OrderedDict
 
 
+class CacheTagCollectionException(Exception):
+    pass
+
+
 @dataclass
 class CacheTagVersion:
     tag_name: str
@@ -19,7 +23,9 @@ class CacheTagVersion:
 class CacheTagCollection:
     tags_versions: typing.Optional[typing.List[CacheTagVersion]] = None
 
-    def __eq__(self, other: 'CacheTagCollection') -> bool:
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, CacheTagCollection):
+            raise CacheTagCollectionException('bad instance')
         return self.tags_versions == other.tags_versions
 
     def __add__(self, other: 'CacheTagCollection') -> 'CacheTagCollection':
@@ -72,4 +78,3 @@ class Cache:
         if not key or not secret:
             return None
         return secret == cls.get_prerender_cache_key_sec(key, salt)
-

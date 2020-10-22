@@ -2,3 +2,7 @@
 *.py[cod]
 *.egg*
 __pycache__
+python-cache-app-app/.mypy_cache
+python-cache-app/build
+python-api-app-app/.mypy_cache
+python-api-app-app/build

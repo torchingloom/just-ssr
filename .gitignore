@@ -2,3 +2,5 @@
 *.py[cod]
 *.egg*
 __pycache__
+python-api-app-app/build
+python-cache-app/build

@@ -2,7 +2,6 @@ import typing
 
 import fastapi
 
-from cache_app.contrib.cache import CacheTagCollection
 from cache_app.contrib.cache.fastapi import Cache
 
 if typing.TYPE_CHECKING:

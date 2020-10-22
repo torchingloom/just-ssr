@@ -46,7 +46,7 @@ class RequestCacheHelper:
             self.is_cache_prerender_enabled = True
 
     async def is_cache_tags_versions_valid(self, tag_collection: CacheTagCollection) -> bool:
-        return await self._cache.check_tags_versions(tag_collection)
+        return bool(await self._cache.check_tags_versions(tag_collection))
 
     async def cache_tags_get(self) -> CacheTagCollection:
         return await self._cache.get_key_tags_versions(self.cache_key)
