@@ -72,3 +72,4 @@ class Cache:
         if not key or not secret:
             return None
         return secret == cls.get_prerender_cache_key_sec(key, salt)
+

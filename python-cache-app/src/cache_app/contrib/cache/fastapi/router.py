@@ -1,8 +1,4 @@
-import copy
 import typing
-import json
-import copy
-from dataclasses import dataclass
 
 from fastapi import FastAPI
 from fastapi.logger import logger
@@ -48,23 +44,20 @@ class RequestCacheHelper:
             self.cache_key = request.headers.get('x-cache-key')
         if self.is_prerender_cache_key_sec_valid:
             self.is_cache_prerender_enabled = True
-        if self.is_cache_prerender_enabled and not self.is_cache_location:
-            self.cache_key += '-' + self.prerender_cache_key
 
-    async def is_cache_tags_versions_valid(self) -> bool:
-        cached_tags = await self.cache_tags_get()
-        return await self._cache.check_tags_versions(cached_tags)
+    async def is_cache_tags_versions_valid(self, tag_collection: CacheTagCollection) -> bool:
+        return await self._cache.check_tags_versions(tag_collection)
 
     async def cache_tags_get(self) -> CacheTagCollection:
         return await self._cache.get_key_tags_versions(self.cache_key)
 
-    async def cache_tags_set(self, tags_collection: CacheTagCollection) -> None:
-        await self._cache.set_key_tags_versions(self.cache_key, tags_collection)
-        await self.apply_for_prerender()
+    async def cache_tags_set(self, tag_collection: CacheTagCollection) -> None:
+        await self._cache.set_key_tags_versions(self.cache_key, tag_collection)
+        await self.apply_for_prerender(tag_collection)
 
-    async def apply_for_prerender(self):
+    async def apply_for_prerender(self, tag_collection: CacheTagCollection) -> None:
         if self.is_cache_prerender_enabled:
-            await self._cache.add_key_to_prerender_key(self.prerender_cache_key, self.cache_key)
+            await self._cache.add_key_hash_to_prerender_key(self.prerender_cache_key, self.cache_key, tag_collection)
 
 
 class CachedRoute(APIRoute):
@@ -76,16 +69,19 @@ class CachedRoute(APIRoute):
             if helper.is_cache_enabled and not helper.is_cache_location:
                 cache_location_url = request.app.config.nginx_api_cache_internal_url
                 cache_url = f'{cache_location_url}{request.url.path}?{request.url.query}'
+                tags = await helper.cache_tags_get()
                 headers = {
                     'x-accel-redirect': cache_url,
                     'x-cache-key': helper.cache_key,
                 }
-                is_cache_valid = await helper.is_cache_tags_versions_valid()
+                is_cache_valid = await helper.is_cache_tags_versions_valid(tags)
                 if not is_cache_valid:
                     headers.update({
                         'x-cache-invalid': 'yes',
                     })
                 if helper.is_cache_prerender_enabled:
+                    if is_cache_valid:
+                        await helper.apply_for_prerender(tags)
                     headers.update({
                         'x-prerender-cache-url': helper.prerender_cache_url,
                         'x-prerender-cache-key': helper.prerender_cache_key,

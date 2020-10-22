@@ -25,10 +25,7 @@ async def handler(request: fastapi.Request) -> fastapi.Response:
     prerender_url = f'{prerender_internal_url}{url_with_args}'
     prerender_cache_key_secret = config.nginx_prerender_cache_key_secret
     prerender_cache_key = cache.get_prerender_cache_key_by_url(str(request.url))
-    internal_urls_tags_versions = CacheTagCollection()
-    for internal_url_key in await cache.get_prerender_key_keys(prerender_cache_key):
-        internal_urls_tags_versions += await cache.get_key_tags_versions(internal_url_key)
-    is_prerender_cache_valid = await cache.check_tags_versions(internal_urls_tags_versions)
+    is_prerender_cache_valid = await cache.check_prerender_key_keys_hashes(prerender_cache_key)
     headers = {
         'x-accel-redirect': prerender_url,
         'x-prerender-cache-url': str(request.url),
@@ -36,7 +33,7 @@ async def handler(request: fastapi.Request) -> fastapi.Response:
         'x-prerender-cache-key-sec': cache.get_prerender_cache_key_sec(prerender_cache_key, prerender_cache_key_secret),
     }
     if not is_prerender_cache_valid:
-        await cache.delete_prerender_key_keys(prerender_cache_key)
+        await cache.delete_prerender_key_keys_hashes(prerender_cache_key)
         headers.update({
             'x-prerender-cache-invalid': 'yes',
         })

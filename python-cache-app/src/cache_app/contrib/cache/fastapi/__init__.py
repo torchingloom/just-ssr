@@ -38,17 +38,34 @@ class Cache(CacheBase):
         await self.redis.delete(*tags_names)
         return CacheTagCollection()
 
-    async def add_key_to_prerender_key(self, prerender_cache_key: str, *keys) -> None:
-        await self.redis.sadd(prerender_cache_key, *keys)
+    async def add_key_hash_to_prerender_key(
+            self,
+            prerender_cache_key: str,
+            key: str,
+            tag_collection: CacheTagCollection
+    ) -> None:
+        value = f'{key}={tag_collection.tags_hash}'
+        await self.redis.sadd(prerender_cache_key, value)
 
-    async def get_prerender_key_keys(self, prerender_cache_key: str) -> typing.List[str]:
-        return list(map(lambda x: x.decode(), await self.redis.smembers(prerender_cache_key)))
+    async def get_prerender_key_keys_hashes(self, prerender_cache_key: str) -> typing.Dict[str, str]:
+        return dict(list(map(lambda x: x.decode().split('='), await self.redis.smembers(prerender_cache_key))))
 
-    async def delete_prerender_key_keys(self, prerender_cache_key: str) -> None:
+    async def check_prerender_key_keys_hashes(self, prerender_cache_key: str) -> bool:
+        all_tags = CacheTagCollection()
+        for key, hash_value in (await self.get_prerender_key_keys_hashes(prerender_cache_key)).items():
+            key_tags = await self.get_key_tags_versions(key)
+            if key_tags.tags_hash != hash_value:
+                return False
+            all_tags += key_tags
+        if not (await self.check_tags_versions(all_tags)):
+            return False
+        return True
+
+    async def delete_prerender_key_keys_hashes(self, prerender_cache_key: str) -> None:
         await self.redis.delete(prerender_cache_key)
 
-    async def set_key_tags_versions(self, key: str, tags_collection: CacheTagCollection) -> None:
-        await self.redis.set(key, pickle.dumps(tags_collection))
+    async def set_key_tags_versions(self, key: str, tag_collection: CacheTagCollection) -> None:
+        await self.redis.set(key, pickle.dumps(tag_collection))
 
     async def get_key_tags_versions(self, key: str) -> CacheTagCollection:
         redis_data = await self.redis.get(key)
